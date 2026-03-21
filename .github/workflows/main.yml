@@ -44,6 +44,9 @@ on:
       modules:
         type: string
         default: '["default"]'
+      central:
+        type: string
+        default: '["default"]'
   
 
 jobs:
@@ -67,6 +70,7 @@ jobs:
         kconfig: ${{ fromJSON(inputs.kconfig) }}
         branches: ${{ fromJSON(inputs.branches) }}
         modules: ${{ fromJSON(inputs.modules) }}
+        central: ${{ fromJSON(inputs.central) }}
     env:
       MIRYOKU_DEBUG: ${{ secrets.MIRYOKU_DEBUG }}
     steps:
@@ -140,6 +144,11 @@ jobs:
           if [ -e "${GITHUB_WORKSPACE}/miryoku_zmk/miryoku/custom_kconfig.conf" ]; then
             sed -E -e '/^\s*$/d' -e '/^\s*#/d' "${GITHUB_WORKSPACE}/miryoku_zmk/miryoku/custom_kconfig.conf" >> "$kconfig_file"
           fi
+          if echo "$kconfig_file" | grep -qE "${{ matrix.central }}"; then
+            echo CONFIG_ZMK_SPLIT_ROLE_CENTRAL=y >> "$kconfig_file"
+          else
+            echo CONFIG_ZMK_SPLIT_ROLE_CENTRAL=n >> "$kconfig_file"
+          fi
           if [ -n "${{ matrix.kconfig }}" -a "${{ matrix.kconfig }}" != 'default' ]
           then
             echo "${{ matrix.kconfig }}" >> "$kconfig_file"
@@ -181,6 +190,7 @@ jobs:
           kconfig: '${{ matrix.kconfig }}'
           branches: '${{ matrix.branches }}'  
           modules: '${{ matrix.modules }}'
+          central: '${{ matrix.central }}'
           " > "$matrix_file"
           cat "$matrix_file"
           echo "::endgroup::"
